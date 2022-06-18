@@ -51,8 +51,11 @@ async def referal_state(message: types.Message):
         referal_username = referal_username.replace('@', '')
 
     if message_username != referal_username:
-        if await asyncio.ensure_future(DBcontrol.reg(referal_username, True)) == 1:
+        if await asyncio.ensure_future(DBcontrol.reg(referal_username, True, message_username)) == 1:
             await message.reply('Вас прегласил: ' + referal_username, reply=False)
+            await state.reset_state()
+            await asyncio.ensure_future(profile(message))
+        elif message.text == '-':
             await state.reset_state()
             await asyncio.ensure_future(profile(message))
 
@@ -64,12 +67,13 @@ async def referal_state(message: types.Message):
 @dp.message_handler(state='*', commands=['start'], commands_prefix='/')
 async def start(message: types.Message):
     username = message.from_user.username
-    if await asyncio.ensure_future(DBcontrol.reg(username, True)) == 1:
+    data = await asyncio.ensure_future(DBcontrol.get_data(username))
+    if data == False:
         data = await asyncio.ensure_future(check_data(username))
-        if data != False:
-            await message.answer('Введите юзернейм пригласившего(если его нет, то напишите \"-\"): ')
-            state = dp.current_state(user=message.from_user.id)
-            await state.set_state(States.all()[0]) #создаём стейт
+        await message.answer('Введите юзернейм пригласившего(если его нет, то напишите \"-\"): ')
+        state = dp.current_state(user=message.from_user.id)
+        await state.set_state(States.all()[0]) #создаём стейт
+
     else:
         await message.answer('Вы уже зарегистрированы!')
 
@@ -86,14 +90,14 @@ async def profile(message: types.Message):
         keyboard.add(topUP_button, withdraw_button) #добавляем кнопки и изменяем размер кнопки
         keyboard.row(info_button) #кнопка на новой строчке
 
-        await message.reply(f'👤Имя: {username}\n🤑Баланс: {data[0]}\n✏️История: {data[1]}\n📣Кол-во рефералов: {data[2]}', reply_markup=keyboard)
+        await message.reply(f'👤Имя: {username}\n🤑Баланс: {data[0]}\n✏️История: {data[1]}\n🤖Кол-во рефералов: {data[2]}\n📣Вас прегласил: {data[3]}', reply_markup=keyboard)
 
 @dp.message_handler() #Обработчик всех сообщений, который не прошли проверку от обработчиков выше
 async def commands(message: types.Message):
     text = message.text.lower()
     username = message.from_user.username
-    if 'some text' == text:
-        await message.answer('some answer')
+    if text == 'информация':
+        await message.answer('some information')
 
 if __name__ == "__main__":
     executor.start_polling(dp, skip_updates=True) #Стартуем бота.
