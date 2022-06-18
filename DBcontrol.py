@@ -15,6 +15,13 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS data(
 
 db.commit()
 
+async def top_up(username, amount):
+    data = await asyncio.ensure_future(get_data(username))
+    balance = data[0]
+    cursor.execute(f"UPDATE data SET balance = '{balance + amount}' WHERE login = '{username}'")
+    db.commit()
+    return
+
 async def get_data(username): #функция получения всех данных пользователя
     for data_info in cursor.execute('SELECT login, balance, history, count_ref, inviting_login FROM data'):
         if data_info[0] == username:
